@@ -9,26 +9,31 @@ export const createNewUser = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check if user already exists
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-      .unique();
+    const clerkId = identity.subject;
+    const email = identity.email || "";
+    const name = identity.name || `${identity.givenName ?? ""} ${identity.familyName ?? ""}`.trim() || "User";
+    const avatarUrl = identity.pictureUrl;
 
-    if (user !== null) {
-      // If we have a new name from Clerk, update it
-      const currentName = identity.name || `${identity.givenName ?? ""} ${identity.familyName ?? ""}`.trim() || "User";
-      if (user.name !== currentName) {
-        await ctx.db.patch(user._id, { name: currentName });
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+      .first();
+
+    if (existing) {
+      // If profile changed, update it
+      if (existing.name !== name || existing.avatarUrl !== avatarUrl || existing.email !== email) {
+        await ctx.db.patch(existing._id, { name, avatarUrl, email });
       }
-      return user._id;
+      return existing._id;
     }
 
     // Otherwise, create a new user
-    const newName = identity.name || `${identity.givenName ?? ""} ${identity.familyName ?? ""}`.trim() || "User";
     return await ctx.db.insert("users", {
-      name: newName,
-      tokenIdentifier: identity.tokenIdentifier,
+      clerkId,
+      email,
+      name,
+      avatarUrl,
+      createdAt: Date.now(),
     });
   },
 });
@@ -42,7 +47,54 @@ export const getCurrentUser = query({
     }
     return await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-      .unique();
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+  },
+});
+
+export const upsertUser = mutation({
+  args: {
+    clerkId: v.string(),
+    email: v.string(),
+    name: v.string(),
+    avatarUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { name: args.name, avatarUrl: args.avatarUrl });
+      return existing._id;
+    }
+    return await ctx.db.insert("users", { ...args, createdAt: Date.now() });
+  },
+});
+
+export const getByClerkId = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+  },
+});
+
+export const searchByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+  },
+});
+
+export const getAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("users").collect();
   },
 });

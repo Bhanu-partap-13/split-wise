@@ -8,6 +8,10 @@
  * @module
  */
 
+import type * as expenses from "../expenses.js";
+import type * as groups from "../groups.js";
+import type * as messages from "../messages.js";
+import type * as settlements from "../settlements.js";
 import type * as users from "../users.js";
 
 import type {
@@ -17,6 +21,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  expenses: typeof expenses;
+  groups: typeof groups;
+  messages: typeof messages;
+  settlements: typeof settlements;
   users: typeof users;
 }>;
 

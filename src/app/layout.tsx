@@ -1,7 +1,10 @@
 import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
 import type { Metadata } from "next";
-import { Onest, Open_Sans } from "next/font/google";
+import { Onest, Open_Sans, Geist } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const onest = Onest({
   variable: "--font-onest",
@@ -26,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${onest.variable} ${openSans.variable} h-full antialiased`}
+      className={cn("h-full", "antialiased", onest.variable, openSans.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col">
         <ConvexClientProvider>
