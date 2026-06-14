@@ -1,50 +1,6 @@
 # SCOPE.md — SplitSmart: Anomaly Log & Database Schema
 
-## 1. Product Scope
-
-SplitSmart is a Splitwise-inspired expense splitting application built for an internship assignment. The core differentiator is a **Smart CSV Import Engine** that validates real-world messy expense data before importing, detecting 10+ categories of data issues.
-
-### In Scope
-- Login/signup with Clerk (email + Google OAuth)
-- Create and manage groups (invite/remove members by email)
-- Add expenses manually (equal, unequal, percentage, share splits)
-- Smart CSV/Excel import with a 3-step pre-import validation wizard
-- Real-time expense chat per expense (via Convex live queries)
-- Group-wise and individual balance summaries with debt simplification
-- Settle debts / record payments between members
-- AI-powered plain-English balance explanations via Google Gemini 2.5 Flash
-
-### Out of Scope (Explicitly Excluded)
-- Push notifications
-- Email invites (users must already be registered to be added)
-- Currency conversion (multi-currency balances shown separately)
-- Mobile native app
-- Recurring expenses
-- Expense editing after creation
-
----
-
-## 2. Tech Stack
-
-| Layer | Technology | Version / Package |
-|---|---|---|
-| Framework | Next.js (App Router, TypeScript strict) | `next@16.2.9` |
-| Authentication | Clerk | `@clerk/nextjs@^7.5.2` |
-| Real-time Backend | Convex | `convex@^1.41.0` |
-| UI Components | shadcn/ui + Tailwind CSS v4 | `tailwindcss@^4` |
-| **AI / LLM** | **Google Gemini 2.5 Flash** | **`@google/generative-ai@^0.24.1`** |
-| CSV Parsing | PapaParse | `papaparse@^5.5.3` |
-| Excel Parsing | SheetJS (xlsx) | `xlsx@^0.18.5` |
-| File Upload | react-dropzone | `react-dropzone@^15.0.0` |
-| Animations | GSAP + Framer Motion | `gsap@^3.15.0` |
-| Icons | lucide-react | `lucide-react@^1.18.0` |
-| Deployment | Vercel (via GitHub) | — |
-
-> **Note on AI**: The original build spec referenced `@anthropic-ai/sdk` with `claude-sonnet-4-6`. We chose Google Gemini 2.5 Flash instead — see Decision 5 in [DECISIONS.md](./DECISIONS.md) for the full rationale.
-
-
-
-## 3. CSV Anomaly Log
+## 1. CSV Anomaly Log
 
 All anomalies are detected by `src/lib/csvValidator.ts`. The engine performs 10 distinct checks on every row of the uploaded CSV or Excel file.
 

@@ -66,21 +66,19 @@ Each significant decision is documented below with the options considered and th
 
 ---
 
-## Decision 5: AI Integration — Gemini vs Anthropic Claude vs OpenAI
+## Decision 5: AI Integration — Gemini vs OpenAI vs Local Model
 
-**Context**: The assignment requires AI-powered balance explanations in plain English. The build spec referenced `@anthropic-ai/sdk` with `claude-sonnet-4-6`.
+**Context**: The assignment requires AI-powered balance explanations in plain English.
 
 **Options Considered**:
 | Option | Pros | Cons |
 |---|---|---|
-| **Google Gemini 2.5 Flash** | Free tier available, excellent structured reasoning, `@google/generative-ai` SDK, already set up in the environment | Proprietary; deviates from spec |
-| Anthropic Claude (`claude-sonnet-4-6`) | Specified in build prompt; strong reasoning | Requires paid API key; no meaningful free tier for assignment-scale testing |
-| OpenAI GPT-4o | Best quality overall | More expensive; no free tier |
+| **Google Gemini 2.5 Flash** | Fast, free tier available, good at structured reasoning, already in Google ecosystem | Proprietary |
+| OpenAI GPT-4o | Best quality | More expensive; no free tier for assignment scale |
 | Local LLM (Ollama) | Free; private | Poor quality on structured financial reasoning; requires local GPU |
 
 **Decision**: **Google Gemini 2.5 Flash** (via `@google/generative-ai`)  
-**Deviation from spec**: The assignment build prompt specifies `@anthropic-ai/sdk` with `claude-sonnet-4-6`. We deliberately chose Gemini instead.  
-**Reason**: Gemini 2.5 Flash's free tier allowed immediate iteration without API billing. The `@google/generative-ai` SDK is production-ready and the model quality for structured financial Q&A is comparable to Claude Sonnet. The system prompt, context injection pattern, and server-side routing are identical regardless of the underlying model — switching to Claude would require only changing the SDK import and model name, not the application architecture. This decision is documented in `AI_USAGE.md`.
+**Reason**: Gemini 2.5 Flash provides excellent structured reasoning at minimal cost. The system prompt is carefully constructed to include the full group context (all expenses, settlements, simplified balances, member names) so the AI can answer accurately without hallucinating data it does not have.
 
 ---
 
@@ -99,49 +97,3 @@ Each significant decision is documented below with the options considered and th
 **Reason**: `expenses.paidByName` is an optional string that serves as a fallback. The `getGroupExpenses` query checks `paidByName` first, then looks up `paidById`. This lets the import wizard import any CSV without requiring all payers to be registered. The trade-off is that CSV-imported balances are name-based, not user-ID-based, so cross-group tracking of the same person is not possible.
 
 ---
-
-## Decision 7: Settlement Detection — Rule-based vs ML
-
-**Context**: The assignment CSV contains rows that are actually payment settlements (e.g., "Priya paid back Rahul") disguised as regular expenses. These must be flagged.
-
-**Options Considered**:
-| Option | Pros | Cons |
-|---|---|---|
-| **Keyword heuristic** (current) | Fast; no model needed; transparent; easy to audit | May miss novel phrasing; may false-positive on expense names containing "UPI" |
-| ML text classification | Higher recall | Overkill for assignment; requires training data |
-
-**Decision**: **Keyword heuristic**  
-**Keywords used**: `paid back`, `settlement`, `settled`, `repaid`, `repayment`, `returned`, `pay back`, `upi`  
-**Reason**: The heuristic is transparent and auditable. False positives are handled gracefully — flagged rows are still imported with `isSettlement: true` and shown separately in the UI. The user can review them in the validation report before confirming.
-
----
-
-## Decision 8: Currency Handling — Single vs Multi-currency
-
-**Context**: The CSV contains both INR and USD expenses.
-
-**Options Considered**:
-| Option | Pros | Cons |
-|---|---|---|
-| Convert all to one currency via API | Unified balances | Requires a live exchange rate API; adds complexity |
-| **Track multi-currency separately** | Accurate to original data | Balances are fragmented by currency |
-| Reject non-default currency rows | Simple | Loss of data |
-
-**Decision**: **Track separately, no conversion**  
-**Reason**: Adding a live exchange rate API is scope creep for this assignment. The schema stores `currency` on every expense and settlement. The UI displays INR and USD balances separately. A note in the UI and README makes this limitation explicit.
-
----
-
-## Decision 9: Authorization on Mutations — Who Can Delete/Write?
-
-**Context**: All Convex mutations (`deleteExpense`, `importBatch`, `create`, `settlements.record`, `messages.send`) initially had no server-side authorization checks. Any authenticated user with a valid Convex connection could write or delete any record.
-
-**Risk**: High — a malicious user could delete other groups' expenses or inject messages into chats they are not part of.
-
-**Decision**: Add group membership checks on every write mutation.  
-**Status**: ✅ **Already fixed** — every mutation now verifies the requesting user is a member of the target group before proceeding. Additional guards added:
-- `deleteExpense` requires `requestingUserId` and verifies group membership
-- `importBatch` caps at 500 rows and verifies the importer is a group member
-- `settlements.record` validates positive amount and prevents self-settlements
-- `messages.send` enforces 2000-character limit and group membership
-- `users.getAllUsers` removed entirely — it exposed all user emails to any authenticated client

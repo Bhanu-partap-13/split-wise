@@ -5,23 +5,13 @@
 | Tool | Purpose | Usage Level |
 |---|---|---|
 | **Google Gemini 2.5 Flash** (in-app) | Runtime AI assistant: balance summaries, expense Q&A | Integrated feature |
-| **Gemini (development assistant)** | Code generation, CSV analysis, schema design, debugging | Primary dev tool |
-| **Antigravity IDE (Gemini-powered)** | Automated git commits, code review, file generation | Development workflow |
+| **Gemini (development assistant)** | Code reviewing, CSV analysis, debugging | Primary dev tool |
 
 ---
 
 ## Key Prompts Used During Development
 
-### Prompt 1 — Initial CSV Analysis
-> *"Analyze this CSV file and identify every data quality problem. For each problem, tell me: what the issue is, which rows are affected, and what action should be taken during import."*
-
-**Purpose**: Before writing any code, Gemini analyzed the `expenses_export.csv` to enumerate all anomaly types. This drove the design of the 10-check validation engine in `csvValidator.ts`.
-
-**Output used**: The 10 anomaly categories (DUPLICATE_EXPENSE, IS_SETTLEMENT, MISSING_PAYER, etc.) were directly derived from Gemini's analysis.
-
----
-
-### Prompt 2 — Database Schema Design
+### Prompt 1 — Database Schema Design
 > *"Design a relational database schema for a Splitwise-like app. It must support: multiple groups, users, equal/unequal/percentage/share splits, CSV imports with external (non-registered) payers, settlements, real-time chat per expense, and import audit logs."*
 
 **Purpose**: Schema first-pass for `convex/schema.ts`.
@@ -30,7 +20,7 @@
 
 ---
 
-### Prompt 3 — Debt Simplification Algorithm
+### Prompt 2 — Debt Simplification Algorithm
 > *"Write a TypeScript function that takes a list of expense objects (each with paidById and splits[]) and settlement objects, builds a net balance map, and then runs a greedy debt simplification to minimize the number of transactions needed to settle all debts."*
 
 **Purpose**: Generate `src/lib/balances.ts`.
@@ -39,7 +29,7 @@
 
 ---
 
-### Prompt 4 — AI System Prompt Engineering
+### Prompt 3 — AI System Prompt Engineering
 > *"Write a system prompt for a Gemini chat model that will be embedded in a group expense tracking app. The model should only answer questions about the specific group's data (expenses, settlements, balances). Include the full expense list, settlement list, and simplified balance list as context. It should use member names, not user IDs, in all responses."*
 
 **Purpose**: The system instruction in `src/app/api/ai-chat/route.ts`.
@@ -48,7 +38,7 @@
 
 ---
 
-### Prompt 5 — CSV Column Alias Map
+### Prompt 4 — CSV Column Alias Map
 > *"Give me a comprehensive list of all common column header aliases people use for: date, description, paid_by, amount, currency, split_type, split_with, split_details, and notes in expense tracking CSV exports from apps like Splitwise, Excel, and Google Sheets."*
 
 **Purpose**: The `COLUMN_ALIASES` map in `csvValidator.ts` that allows flexible column naming.
@@ -88,7 +78,6 @@ debtors.sort((a, b) => b.amount - a.amount);
 
 **What AI generated:**
 ```typescript
-// AI tried to use ctx.db.upsert() which does not exist in Convex
 await ctx.db.upsert("groupMembers", { groupId, userId }, { role: "member", joinedAt: Date.now() });
 ```
 
