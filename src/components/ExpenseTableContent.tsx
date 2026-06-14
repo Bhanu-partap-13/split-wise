@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -17,8 +17,9 @@ import {
   Clock3,
   Loader,
   AlertCircle,
-  SortAsc,
   ChevronsUpDown,
+  ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,26 @@ const PAGE_SIZE = 10;
 
 type SortField = "description" | "date" | "amount" | "splitType";
 type SortDir = "asc" | "desc";
+
+// Approximate exchange rates relative to INR
+const RATES_TO_INR: Record<string, number> = {
+  INR: 1,
+  USD: 83.5,
+  EUR: 90.2,
+  GBP: 105.4,
+  AED: 22.7,
+  SGD: 61.8,
+  CAD: 61.2,
+  AUD: 54.3,
+  JPY: 0.56,
+};
+
+function convertAmount(amount: number, fromCurrency: string, toCurrency: string): number {
+  if (fromCurrency === toCurrency) return amount;
+  const fromRate = RATES_TO_INR[fromCurrency.toUpperCase()] ?? 1;
+  const toRate = RATES_TO_INR[toCurrency.toUpperCase()] ?? 1;
+  return (amount * fromRate) / toRate;
+}
 
 // Maps split type → status pill style (mirrors Linear status colors)
 function SplitTypePill({ type, isSettlement }: { type: string; isSettlement?: boolean }) {
@@ -109,8 +130,8 @@ function ColHeader({
   return (
     <th
       className={cn(
-        "text-left px-3 py-2.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider select-none",
-        field && "cursor-pointer hover:text-zinc-300 transition-colors",
+        "text-left px-3 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider select-none",
+        field && "cursor-pointer hover:text-foreground transition-colors",
         className
       )}
       onClick={() => field && onSort(field)}
@@ -119,7 +140,7 @@ function ColHeader({
         {label}
         {field && (
           <ChevronsUpDown
-            className={cn("w-3 h-3 transition-opacity", active ? "opacity-100 text-zinc-300" : "opacity-30")}
+            className={cn("w-3 h-3 transition-opacity", active ? "opacity-100 text-foreground" : "opacity-30")}
           />
         )}
       </span>
@@ -138,13 +159,25 @@ export function ExpenseTableContent({
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [currencyFilter, setCurrencyFilter] = useState<string | null>(null);
+  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
 
-  const formatAmount = (amount: number, currency: string) =>
-    new Intl.NumberFormat("en-IN", {
+  // Collect all unique currencies from the expense list
+  const allCurrencies = useMemo(() => {
+    const set = new Set<string>();
+    expenses.forEach((e) => { if (e.currency) set.add(e.currency.toUpperCase()); });
+    return ["All", ...Array.from(set)];
+  }, [expenses]);
+
+  const formatAmount = (amount: number, fromCurrency: string) => {
+    const target = currencyFilter || fromCurrency;
+    const converted = currencyFilter ? convertAmount(amount, fromCurrency, currencyFilter) : amount;
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: currency || "INR",
+      currency: target || "INR",
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(converted);
+  };
 
   const formatDate = (ts: number) =>
     new Date(ts).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" });
@@ -155,7 +188,13 @@ export function ExpenseTableContent({
     setPage(0);
   };
 
-  const sorted = [...expenses].sort((a, b) => {
+  // Filter by currency if selected
+  const filtered = useMemo(() =>
+    currencyFilter ? expenses.filter((e) => e.currency?.toUpperCase() === currencyFilter) : expenses,
+    [expenses, currencyFilter]
+  );
+
+  const sorted2 = [...filtered].sort((a, b) => {
     let cmp = 0;
     if (sortField === "description") cmp = (a.description ?? "").localeCompare(b.description ?? "");
     else if (sortField === "date") cmp = (a.date ?? 0) - (b.date ?? 0);
@@ -164,8 +203,8 @@ export function ExpenseTableContent({
     return sortDir === "asc" ? cmp : -cmp;
   });
 
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-  const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.ceil(sorted2.length / PAGE_SIZE);
+  const paged = sorted2.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const allSelected = paged.length > 0 && selectedIds.length === paged.length;
   const toggleAll = () => setSelectedIds(allSelected ? [] : paged.map((e) => e._id));
@@ -173,9 +212,9 @@ export function ExpenseTableContent({
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden border border-white/[0.06] bg-[#0d0d0d]">
+    <div className="flex flex-col rounded-xl overflow-hidden border border-border bg-card">
       {/* Column header bar — matches Linear exactly */}
-      <div className="border-b border-white/[0.06] bg-[#111111]">
+      <div className="border-b border-border bg-muted/30">
         <table className="w-full table-fixed">
           <colgroup>
             <col className="w-10" />
@@ -193,7 +232,7 @@ export function ExpenseTableContent({
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={toggleAll}
-                  className="rounded-[4px] border-white/20 w-3.5 h-3.5 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                  className="rounded-[4px] border-primary/20 w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
               </th>
               <ColHeader label="Transaction" field="description" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
@@ -201,7 +240,47 @@ export function ExpenseTableContent({
               <ColHeader label="Paid By" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
               <ColHeader label="Date" field="date" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
               <ColHeader label="Members" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="text-center" />
-              <ColHeader label="Amount" field="amount" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="text-right" />
+              {/* Currency / Amount header with dropdown filter */}
+              <th className="text-right px-3 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider select-none">
+                <div className="relative flex justify-end">
+                  <button
+                    onClick={() => setCurrencyMenuOpen((o) => !o)}
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <span>{currencyFilter ? `${currencyFilter} ↔ converted` : "Amount"}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60" />
+                  </button>
+                  {currencyMenuOpen && (
+                    <div className="absolute top-6 right-0 z-50 bg-popover border border-border rounded-lg shadow-xl p-1 min-w-[140px]">
+                      <p className="px-2 py-1 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                        Filter &amp; Convert to
+                      </p>
+                      {allCurrencies.map((cur) => (
+                        <button
+                          key={cur}
+                          onClick={() => {
+                            setCurrencyFilter(cur === "All" ? null : cur);
+                            setCurrencyMenuOpen(false);
+                            setPage(0);
+                          }}
+                          className={cn(
+                            "w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors cursor-pointer",
+                            (cur === "All" ? !currencyFilter : currencyFilter === cur)
+                              ? "bg-accent text-foreground font-semibold"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          )}
+                        >
+                          {cur === "All" ? (
+                            <><RefreshCw className="w-3 h-3" />Show All</>
+                          ) : (
+                            <><span className="font-mono w-8">{cur}</span>{cur !== "INR" && <span className="text-[10px] text-muted-foreground">→ {RATES_TO_INR[cur] ? `₹${RATES_TO_INR[cur]}` : "rate N/A"}</span>}</>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </th>
               <th />
             </tr>
           </thead>
@@ -212,9 +291,9 @@ export function ExpenseTableContent({
       <div className="overflow-auto">
         {paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-72 gap-3">
-            <Receipt className="w-8 h-8 text-zinc-700" />
-            <p className="text-sm text-zinc-500 font-medium">No expenses logged yet</p>
-            <p className="text-xs text-zinc-600">Add an expense to start tracking splits.</p>
+            <Receipt className="w-8 h-8 text-muted-foreground/30" />
+            <p className="text-sm text-foreground font-medium">No expenses logged yet</p>
+            <p className="text-xs text-muted-foreground">Add an expense to start tracking splits.</p>
           </div>
         ) : (
           <table className="w-full table-fixed">
@@ -238,11 +317,11 @@ export function ExpenseTableContent({
                   <tr
                     key={expense._id}
                     className={cn(
-                      "group border-b border-white/[0.04] transition-colors duration-100 cursor-pointer",
+                      "group border-b border-border transition-colors duration-100 cursor-pointer",
                       isSelected
-                        ? "bg-blue-600/[0.06]"
+                        ? "bg-primary/5"
                         : isHovered
-                        ? "bg-white/[0.025]"
+                        ? "bg-muted/40"
                         : "bg-transparent"
                     )}
                     onMouseEnter={() => setHoveredId(expense._id)}
@@ -254,14 +333,14 @@ export function ExpenseTableContent({
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleRow(expense._id)}
-                        className="rounded-[4px] border-white/20 w-3.5 h-3.5 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                        className="rounded-[4px] border-primary/20 w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                       />
                     </td>
 
                     {/* Transaction name + badges */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[13px] font-medium text-zinc-100 truncate leading-tight">
+                        <span className="text-[13px] font-medium text-foreground truncate leading-tight">
                           {expense.description}
                         </span>
                         {expense.importBatchId && (
@@ -281,19 +360,19 @@ export function ExpenseTableContent({
                     {/* Paid By */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5 ring-1 ring-white/10 shrink-0">
+                        <Avatar className="h-5 w-5 ring-1 ring-border shrink-0">
                           <AvatarImage src={expense.paidBy?.avatarUrl} />
-                          <AvatarFallback className="text-[8px] bg-zinc-800 text-zinc-300 font-semibold">
+                          <AvatarFallback className="text-[8px] bg-muted text-muted-foreground font-semibold">
                             {payerName[0]}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-[12px] text-zinc-300 truncate">{payerName}</span>
+                        <span className="text-[12px] text-foreground truncate">{payerName}</span>
                       </div>
                     </td>
 
                     {/* Date */}
                     <td className="px-3 py-3">
-                      <span className="text-[12px] text-zinc-500 tabular-nums">
+                      <span className="text-[12px] text-muted-foreground tabular-nums">
                         {formatDate(expense.date)}
                       </span>
                     </td>
@@ -302,14 +381,14 @@ export function ExpenseTableContent({
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-center -space-x-1.5">
                         {expense.splits?.slice(0, 4).map((split: any, idx: number) => (
-                          <Avatar key={idx} className="h-5 w-5 ring-1 ring-[#0d0d0d]">
-                            <AvatarFallback className="text-[7px] bg-zinc-800 text-zinc-300 font-semibold uppercase">
+                          <Avatar key={idx} className="h-5 w-5 ring-1 ring-background">
+                            <AvatarFallback className="text-[7px] bg-muted text-muted-foreground font-semibold uppercase">
                               {split.userName?.[0] ?? "?"}
                             </AvatarFallback>
                           </Avatar>
                         ))}
                         {expense.splits?.length > 4 && (
-                          <div className="h-5 w-5 rounded-full bg-zinc-800 ring-1 ring-[#0d0d0d] flex items-center justify-center text-[7px] font-bold text-zinc-400">
+                          <div className="h-5 w-5 rounded-full bg-muted border border-background flex items-center justify-center text-[7px] font-bold text-muted-foreground">
                             +{expense.splits.length - 4}
                           </div>
                         )}
@@ -318,9 +397,14 @@ export function ExpenseTableContent({
 
                     {/* Amount */}
                     <td className="px-3 py-3 text-right">
-                      <span className="text-[13px] font-semibold text-zinc-100 tabular-nums">
+                      <span className="text-[13px] font-semibold text-foreground tabular-nums">
                         {formatAmount(expense.amount, expense.currency)}
                       </span>
+                      {currencyFilter && expense.currency?.toUpperCase() !== currencyFilter && (
+                        <div className="text-[10px] text-muted-foreground/60 tabular-nums">
+                          orig {new Intl.NumberFormat("en-IN", { style: "currency", currency: expense.currency || "INR", maximumFractionDigits: 0 }).format(expense.amount)}
+                        </div>
+                      )}
                     </td>
 
                     {/* Actions — appears on hover */}
@@ -329,18 +413,18 @@ export function ExpenseTableContent({
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             render={
-                              <button className="h-6 w-6 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors" />
+                              <button className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" />
                             }
                           >
                             <MoreHorizontal className="w-3.5 h-3.5" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="w-40 bg-[#1a1a1a] border border-white/[0.08] shadow-2xl rounded-lg p-1 text-sm"
+                            className="w-40 bg-popover border border-border shadow-2xl rounded-lg p-1 text-sm"
                           >
                             <DropdownMenuItem
                               onClick={() => onOpenChat(expense._id)}
-                              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-zinc-300 hover:text-white hover:bg-white/[0.06] cursor-pointer text-[12px]"
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer text-[12px]"
                             >
                               <MessageSquare className="w-3.5 h-3.5" />
                               Open Chat
@@ -367,20 +451,21 @@ export function ExpenseTableContent({
       </div>
 
       {/* Footer: count + pagination */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.04] bg-[#0d0d0d]">
-        <span className="text-[11px] text-zinc-600 tabular-nums">
-          {expenses.length === 0
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-card">
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {filtered.length === 0
             ? "No records"
             : selectedIds.length > 0
-            ? `${selectedIds.length} selected of ${expenses.length}`
-            : `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, sorted.length)} of ${sorted.length}`}
+            ? `${selectedIds.length} selected of ${filtered.length}`
+            : `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, sorted2.length)} of ${sorted2.length}`}
+          {currencyFilter && <span className="ml-2 text-primary font-medium">· converted to {currencyFilter}</span>}
         </span>
 
         <div className="flex items-center gap-1">
           <button
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
-            className="h-6 w-6 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
@@ -392,8 +477,8 @@ export function ExpenseTableContent({
               className={cn(
                 "h-6 min-w-[24px] px-1.5 flex items-center justify-center rounded-md text-[11px] font-medium transition-colors",
                 page === i
-                  ? "bg-white/[0.1] text-zinc-100"
-                  : "text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.04]"
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               {i + 1}
@@ -403,7 +488,7 @@ export function ExpenseTableContent({
           <button
             disabled={page >= totalPages - 1}
             onClick={() => setPage((p) => p + 1)}
-            className="h-6 w-6 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+            className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
