@@ -83,3 +83,31 @@ export const removeMember = mutation({
     if (member) await ctx.db.delete(member._id);
   },
 });
+
+export const deleteGroup = mutation({
+  args: { groupId: v.id("groups"), requestingUserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const group = await ctx.db.get(args.groupId);
+    if (!group) throw new Error("Group not found");
+    if (group.createdBy !== args.requestingUserId) {
+      throw new Error("Only the group owner can delete this group");
+    }
+
+    // Delete all groupMembers
+    const members = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(members.map((m) => ctx.db.delete(m._id)));
+
+    // Delete all expenses
+    const expenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(expenses.map((e) => ctx.db.delete(e._id)));
+
+    // Delete the group itself
+    await ctx.db.delete(args.groupId);
+  },
+});
