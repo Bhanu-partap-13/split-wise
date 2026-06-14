@@ -27,9 +27,30 @@ export const create = mutation({
     })),
   },
   handler: async (ctx, args) => {
+    // SECURITY: verify the createdBy user is a member of the group
+    const membership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", args.groupId).eq("userId", args.createdBy)
+      )
+      .first();
+    if (!membership) {
+      throw new Error("You must be a member of this group to add expenses.");
+    }
+
+    // SECURITY: sanitize description to prevent XSS if rendered as HTML elsewhere
+    const description = args.description.trim();
+    if (!description) throw new Error("Description cannot be empty.");
+
+    // SECURITY: validate amount is positive for non-settlement expenses
+    if (!args.isSettlement && args.amount <= 0) {
+      throw new Error("Expense amount must be greater than 0.");
+    }
+
     const { splits, ...expenseData } = args;
     const expenseId = await ctx.db.insert("expenses", {
       ...expenseData,
+      description,
       createdAt: Date.now(),
     });
     await Promise.all(
@@ -71,6 +92,22 @@ export const importBatch = mutation({
     batchId: v.string(),
   },
   handler: async (ctx, args) => {
+    // SECURITY: verify importedBy user is a member of the group
+    const membership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", args.groupId).eq("userId", args.importedBy)
+      )
+      .first();
+    if (!membership) {
+      throw new Error("You must be a member of this group to import expenses.");
+    }
+
+    // SECURITY: limit batch size to prevent abuse / timeouts
+    if (args.expenses.length > 500) {
+      throw new Error("Batch import is limited to 500 rows at a time.");
+    }
+
     for (const expense of args.expenses) {
       const { splits, ...expenseData } = expense;
 
@@ -89,7 +126,6 @@ export const importBatch = mutation({
       }
     }
   },
-
 });
 
 export const getGroupExpenses = query({
@@ -118,13 +154,38 @@ export const getGroupExpenses = query({
 
 
 export const deleteExpense = mutation({
-  args: { expenseId: v.id("expenses") },
+  args: {
+    expenseId: v.id("expenses"),
+    requestingUserId: v.id("users"),
+  },
   handler: async (ctx, args) => {
+    const expense = await ctx.db.get(args.expenseId);
+    if (!expense) throw new Error("Expense not found.");
+
+    // SECURITY: verify the requesting user is a member of the expense's group
+    const membership = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_and_user", (q) =>
+        q.eq("groupId", expense.groupId).eq("userId", args.requestingUserId)
+      )
+      .first();
+    if (!membership) {
+      throw new Error("You must be a member of this group to delete expenses.");
+    }
+
     const splits = await ctx.db
       .query("expenseSplits")
       .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
       .collect();
     await Promise.all(splits.map((s) => ctx.db.delete(s._id)));
+
+    // Also delete associated messages
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
+      .collect();
+    await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
+
     await ctx.db.delete(args.expenseId);
   },
 });

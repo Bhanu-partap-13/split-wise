@@ -53,9 +53,13 @@ export function ExpenseList({ groupId, currentUser }: Props) {
   }, [viewMode]);
 
   const handleDeleteExpense = async (expenseId: Id<"expenses">) => {
+    if (!currentUser?._id) {
+      toast({ title: "Not authenticated", variant: "destructive" });
+      return;
+    }
     try {
-      await deleteExpense({ expenseId }); 
-      toast({ title: "Expense record deleted" }); 
+      await deleteExpense({ expenseId, requestingUserId: currentUser._id });
+      toast({ title: "Expense record deleted" });
     } catch {
       toast({ title: "Failed to delete expense", variant: "destructive" });
     }
