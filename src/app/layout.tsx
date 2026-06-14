@@ -30,9 +30,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", onest.variable, openSans.variable, "font-sans", geist.variable)}
+      suppressHydrationWarning
+      className={cn("h-full dark", "antialiased", onest.variable, openSans.variable, "font-sans", geist.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ConvexClientProvider>
           {children}
           <Toaster position="top-right" richColors />

@@ -183,16 +183,21 @@
 
   --animate-spotlight: spotlight 2s ease 0.75s 1 forwards;
 
-  /* Preserve split-wise custom color palette */
-  --color-deep-navy: #0A0F1E;
-  --color-electric-blue: #2563EB;
-  --color-soft-teal: #00C2CB;
-  --color-brand-white: #FFFFFF;
-  --color-brand-gray: #A0AEC0;
-  --color-dark-navy-surface: #131929;
-  --color-subtle-blue-gray: #1E2D45;
-  --color-cta-blue: #2563EB;
-  --color-cta-blue-hover: #3B82F6;
+  /* ─── SplitSmart × Linear/Vercel Design Tokens ──────────────────────────── */
+  /* Surface hierarchy — mirrors Linear's #0D0D0D / #111 / #141414 stack */
+  --color-deep-navy:          #0a0a0a;
+  --color-dark-navy-surface:  #111111;
+  --color-subtle-blue-gray:   #1e2028;
+
+  /* Brand accents */
+  --color-electric-blue:      #3b82f6;
+  --color-cta-blue:           #3b82f6;
+  --color-cta-blue-hover:     #60a5fa;
+  --color-soft-teal:          #06b6d4;
+
+  /* Text hierarchy */
+  --color-brand-white:        #f4f4f5;
+  --color-brand-gray:         #71717a;
 }
 
 @layer base {
@@ -266,6 +271,161 @@
 }
 
 @layer components {
+  .fc-theme {
+    --fc-border-color: color-mix(in oklab, var(--border) 78%, black);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: color-mix(in oklab, var(--background) 92%, white);
+    --fc-list-event-hover-bg-color: color-mix(in oklab,
+        var(--accent) 55%,
+        black);
+    --fc-event-bg-color: color-mix(in oklab, var(--primary) 80%, #334155);
+    --fc-event-border-color: transparent;
+    --fc-today-bg-color: color-mix(in oklab, #2563eb 9%, transparent);
+    --fc-button-bg-color: color-mix(in oklab, var(--secondary) 90%, black);
+    --fc-button-border-color: color-mix(in oklab, var(--border) 85%, black);
+    --fc-button-hover-bg-color: color-mix(in oklab, var(--accent) 72%, black);
+    --fc-button-hover-border-color: color-mix(in oklab,
+        var(--border) 75%,
+        black);
+    --fc-button-active-bg-color: color-mix(in oklab, var(--accent) 62%, black);
+    --fc-button-active-border-color: color-mix(in oklab,
+        var(--border) 72%,
+        black);
+  }
+
+  .fc-theme .fc {
+    height: 100%;
+    font-size: 0.9rem;
+  }
+
+  .fc-theme .fc-toolbar {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--fc-border-color);
+    background: color-mix(in oklab, var(--background) 96%, black);
+  }
+
+  .fc-theme .fc-toolbar-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: var(--foreground);
+    letter-spacing: -0.015em;
+  }
+
+  .fc-theme .fc-button {
+    border-radius: 0.45rem !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    text-transform: none;
+    box-shadow: none !important;
+    padding: 0.35rem 0.6rem !important;
+  }
+
+  .fc-theme .fc-col-header-cell-cushion {
+    padding: 0.65rem 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    letter-spacing: 0.01em;
+  }
+
+  .fc-theme .fc-daygrid-day-number {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.76rem;
+    color: var(--muted-foreground);
+  }
+
+  .fc-theme .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: #dbeafe;
+    font-weight: 700;
+    background: color-mix(in oklab, #2563eb 18%, transparent);
+    border: 1px solid color-mix(in oklab, #2563eb 35%, transparent);
+    border-radius: 9999px;
+    margin: 0.25rem;
+    padding: 0.2rem 0.45rem;
+  }
+
+  .fc-theme .fc-daygrid-event {
+    margin-top: 0.14rem;
+    padding: 0.1rem 0.28rem;
+    border-radius: 0.35rem;
+    font-size: 0.69rem;
+    line-height: 1.15;
+    font-weight: 600;
+    opacity: 1 !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 10px 22px rgba(0, 0, 0, 0.18);
+  }
+
+  .fc-theme .fc-daygrid-event-dot {
+    border-color: currentColor !important;
+  }
+
+  .fc-theme .fc-task-event .fc-event-title {
+    color: #e2e8f0;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  .fc-theme .fc-task-status-completed {
+    color: #22c55e !important;
+  }
+
+  .fc-theme .fc-task-status-inprogress,
+  .fc-theme .fc-task-status-in-progress {
+    color: #3b82f6 !important;
+  }
+
+  .fc-theme .fc-task-status-reviewing {
+    color: #a78bfa !important;
+  }
+
+  .fc-theme .fc-task-status-testing {
+    color: #06b6d4 !important;
+  }
+
+  .fc-theme .fc-task-status-not-started,
+  .fc-theme .fc-task-status-not_started {
+    color: #94a3b8 !important;
+  }
+
+  .fc-theme .fc-task-status-issue,
+  .fc-theme .fc-task-status-blocked {
+    color: #ef4444 !important;
+  }
+
+  .fc-theme .fc-daygrid-more-link {
+    font-size: 0.68rem;
+    color: var(--muted-foreground);
+    font-weight: 600;
+  }
+
+  .fc-theme .fc-scrollgrid,
+  .fc-theme .fc-scrollgrid td,
+  .fc-theme .fc-scrollgrid th {
+    border-color: var(--fc-border-color) !important;
+  }
+
+  /* Time-grid look without showing any time (date-only tasks). */
+  .fc-theme .fc-timegrid-axis,
+  .fc-theme .fc-timegrid-slot-label,
+  .fc-theme .fc-timegrid-slot-label-cushion {
+    display: none !important;
+  }
+
+  .fc-theme .fc-timegrid-event {
+    margin-top: 0.14rem;
+    padding: 0.1rem 0.28rem;
+    border-radius: 0.35rem;
+    font-size: 0.69rem;
+    line-height: 1.15;
+    font-weight: 600;
+    opacity: 1 !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 10px 22px rgba(0, 0, 0, 0.18);
+  }
+
   /* Subtle noise texture for premium feel */
   .noise-bg {
     position: absolute;
@@ -401,6 +561,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+
     ::view-transition-old(*),
     ::view-transition-new(*),
     ::view-transition-group(*) {
@@ -467,166 +628,255 @@
   }
 
   @keyframes flip {
-    0%, 15% {
+
+    0%,
+    15% {
       transform: rotateX(0deg);
     }
-    40%, 65% {
+
+    40%,
+    65% {
       transform: rotateX(90deg);
     }
-    85%, 100% {
+
+    85%,
+    100% {
       transform: rotateX(0deg);
     }
   }
 
   @keyframes face-fade-out {
-    0%, 15% {
+
+    0%,
+    15% {
       opacity: 1;
       filter: brightness(1);
     }
-    40%, 65% {
+
+    40%,
+    65% {
       opacity: 0;
       filter: brightness(0.5);
     }
-    85%, 100% {
+
+    85%,
+    100% {
       opacity: 1;
       filter: brightness(1);
     }
   }
 
   @keyframes face-fade-in {
-    0%, 15% {
+
+    0%,
+    15% {
       opacity: 0;
       filter: brightness(0.5);
     }
-    40%, 65% {
+
+    40%,
+    65% {
       opacity: 1;
       filter: brightness(1);
     }
-    85%, 100% {
+
+    85%,
+    100% {
       opacity: 0;
       filter: brightness(0.5);
     }
   }
+}
 
-  /* Premium Message Highlight Pulse */
-  @keyframes premium-message-pulse {
-    0% {
-      background-color: transparent;
-      box-shadow: inset 3px 0 0 0 transparent;
-    }
-    35% {
-      background-color: color-mix(in oklab, var(--foreground) 6%, transparent);
-      box-shadow: inset 3.5px 0 0 0 color-mix(in oklab, var(--foreground) 30%, transparent);
-    }
-    100% {
-      background-color: transparent;
-      box-shadow: inset 3px 0 0 0 transparent;
-    }
+/* Premium Message Highlight Pulse */
+@keyframes premium-message-pulse {
+  0% {
+    background-color: transparent;
+    box-shadow: inset 3px 0 0 0 transparent;
   }
 
-  .premium-message-highlight {
-    animation: premium-message-pulse 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  35% {
+    background-color: color-mix(in oklab, var(--foreground) 6%, transparent);
+    box-shadow: inset 3.5px 0 0 0 color-mix(in oklab, var(--foreground) 30%, transparent);
   }
 
-  /* AI Agent Shimmer Effect */
-  @keyframes ai-shimmer-sweep {
-    0% {
-      background-position: -200% center;
-    }
-    100% {
-      background-position: 200% center;
-    }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 3px 0 0 0 transparent;
+  }
+}
+
+.premium-message-highlight {
+  animation: premium-message-pulse 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* ─── AI Agent Shimmer Effect ──────────────────────────────────────────────────
+   Applied to the temp AI message text during "thinking" / tool-calling state.
+   Animates a bright gradient sweep from left→right in a loop.
+   NOT applied during streaming (when text is actively appearing).
+─────────────────────────────────────────────────────────────────────────────── */
+@keyframes ai-shimmer-sweep {
+  0% {
+    background-position: -200% center;
   }
 
-  .ai-shimmer-text {
-    background: linear-gradient(90deg,
-        var(--muted-foreground) 30%,
-        var(--muted-foreground) 35%,
-        var(--foreground) 40%,
-        var(--muted-foreground) 60%,
-        var(--muted-foreground) 75%);
-    background-size: 200% auto;
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: ai-shimmer-sweep 1.8s linear infinite;
-    display: inline-block;
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.ai-shimmer-text {
+  background: linear-gradient(90deg,
+      var(--muted-foreground) 30%,
+      var(--muted-foreground) 35%,
+      var(--foreground) 40%,
+      var(--muted-foreground) 60%,
+      var(--muted-foreground) 75%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ai-shimmer-sweep 1.8s linear infinite;
+  display: inline-block;
+}
+
+.frameworkline {
+  offset-anchor: 10px 0px;
+  animation: frameworkline-animation-path;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.9, 0.8, 0.8, 0.9);
+  animation-duration: 3.5s;
+}
+
+.framework-line {
+  offset-path: path("M 1 0 v 5 q 0 5 5 5 h 39 q 5 0 5 5 v 71 q 0 5 5 5 h 39 q 5 0 5 5 v 20"
+    );
+}
+
+@keyframes frameworkline-animation-path {
+  0% {
+    offset-distance: 0%;
   }
 
-  /* Sidebar Text Marquee */
-  @keyframes marquee-scroll {
-    0% {
-      transform: translateX(0);
-    }
-    15% {
-      transform: translateX(0);
-    }
-    85% {
-      transform: translateX(calc(-1 * var(--scroll-dist, 0px)));
-    }
-    100% {
-      transform: translateX(calc(-1 * var(--scroll-dist, 0px)));
-    }
+  85% {
+    offset-distance: 100%;
   }
 
-  .animate-marquee-text {
-    animation: marquee-scroll 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+/* Sidebar Text Marquee */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
   }
 
-  /* Sidebar: butter-smooth GPU-composited motion */
-  [data-slot="sidebar-container"] {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+  15% {
+    transform: translateX(0);
   }
 
-  [data-slot="sidebar-gap"] {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+  85% {
+    transform: translateX(calc(-1 * var(--scroll-dist, 0px)));
   }
 
-  [data-slot="sidebar-inner"] {
-    contain: layout style;
-    opacity: 1 !important;
+  100% {
+    transform: translateX(calc(-1 * var(--scroll-dist, 0px)));
+  }
+}
+
+.animate-marquee-text {
+  animation: marquee-scroll 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+/* Logo Marquee (Hero trusted-by section) */
+@keyframes logo-marquee {
+  0% {
+    transform: translateX(0);
   }
 
-  [data-collapsible="icon"] [data-slot="sidebar-inner"] span:not(.sr-only),
-  [data-collapsible="icon"] [data-slot="sidebar-inner"] [data-sidebar="group-label"] {
-    pointer-events: none;
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-logo-marquee {
+  animation: logo-marquee 25s linear infinite;
+}
+
+/* ─────────────────────────────────────────
+   Sidebar: butter-smooth GPU-composited motion
+   Eliminates "text appears in stages" / jank
+   reported by users. Promotes sidebar panels
+   to their own GPU layer so transitions are
+   handled entirely by the compositor thread —
+   never blocking the main thread.
+──────────────────────────────────────────── */
+[data-slot="sidebar-container"] {
+  /* Force GPU layer promotion */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Prevent sub-pixel paint during width animation */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+[data-slot="sidebar-gap"] {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Prevent layout recalculation of sidebar children during animation
+   so content doesn't "paint in stages" */
+[data-slot="sidebar-inner"] {
+  /* Isolate paint so inner content doesn't trigger repaints during
+     the outer container's width transition */
+  contain: layout style;
+  /* Keep content fully visible immediately — no opacity flash */
+  opacity: 1 !important;
+}
+
+
+/* Icon-only state: ensure all text labels are hidden instantly
+   using the compositor (opacity 0 vs display:none avoids layout shift) */
+[data-collapsible="icon"] [data-slot="sidebar-inner"] span:not(.sr-only),
+[data-collapsible="icon"] [data-slot="sidebar-inner"] [data-sidebar="group-label"] {
+  pointer-events: none;
+}
+
+/* Testimonials Infinite Vertical Scroll */
+@keyframes marquee-up {
+  0% {
+    transform: translateY(0);
   }
 
-  /* Testimonials Infinite Vertical Scroll */
-  @keyframes marquee-up {
-    0% {
-      transform: translateY(0);
-    }
-    100% {
-      transform: translateY(-50%);
-    }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes marquee-down {
+  0% {
+    transform: translateY(-50%);
   }
 
-  @keyframes marquee-down {
-    0% {
-      transform: translateY(-50%);
-    }
-    100% {
-      transform: translateY(0);
-    }
+  100% {
+    transform: translateY(0);
   }
+}
 
-  .animate-marquee-up {
-    animation: marquee-up 35s linear infinite;
-  }
+.animate-marquee-up {
+  animation: marquee-up 35s linear infinite;
+}
 
-  .animate-marquee-down {
-    animation: marquee-down 35s linear infinite;
-  }
+.animate-marquee-down {
+  animation: marquee-down 35s linear infinite;
+}
 
-  .animate-marquee-up:hover,
-  .animate-marquee-down:hover {
-    animation-play-state: paused;
-  }
+.animate-marquee-up:hover,
+.animate-marquee-down:hover {
+  animation-play-state: paused;
 }
