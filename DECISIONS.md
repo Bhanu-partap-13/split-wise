@@ -66,19 +66,21 @@ Each significant decision is documented below with the options considered and th
 
 ---
 
-## Decision 5: AI Integration — Gemini vs OpenAI vs Local Model
+## Decision 5: AI Integration — Gemini vs Anthropic Claude vs OpenAI
 
-**Context**: The assignment requires AI-powered balance explanations in plain English.
+**Context**: The assignment requires AI-powered balance explanations in plain English. The build spec referenced `@anthropic-ai/sdk` with `claude-sonnet-4-6`.
 
 **Options Considered**:
 | Option | Pros | Cons |
 |---|---|---|
-| **Google Gemini 2.5 Flash** | Fast, free tier available, good at structured reasoning, already in Google ecosystem | Proprietary |
-| OpenAI GPT-4o | Best quality | More expensive; no free tier for assignment scale |
+| **Google Gemini 2.5 Flash** | Free tier available, excellent structured reasoning, `@google/generative-ai` SDK, already set up in the environment | Proprietary; deviates from spec |
+| Anthropic Claude (`claude-sonnet-4-6`) | Specified in build prompt; strong reasoning | Requires paid API key; no meaningful free tier for assignment-scale testing |
+| OpenAI GPT-4o | Best quality overall | More expensive; no free tier |
 | Local LLM (Ollama) | Free; private | Poor quality on structured financial reasoning; requires local GPU |
 
 **Decision**: **Google Gemini 2.5 Flash** (via `@google/generative-ai`)  
-**Reason**: Gemini 2.5 Flash provides excellent structured reasoning at minimal cost. The system prompt is carefully constructed to include the full group context (all expenses, settlements, simplified balances, member names) so the AI can answer accurately without hallucinating data it does not have.
+**Deviation from spec**: The assignment build prompt specifies `@anthropic-ai/sdk` with `claude-sonnet-4-6`. We deliberately chose Gemini instead.  
+**Reason**: Gemini 2.5 Flash's free tier allowed immediate iteration without API billing. The `@google/generative-ai` SDK is production-ready and the model quality for structured financial Q&A is comparable to Claude Sonnet. The system prompt, context injection pattern, and server-side routing are identical regardless of the underlying model — switching to Claude would require only changing the SDK import and model name, not the application architecture. This decision is documented in `AI_USAGE.md`.
 
 ---
 
@@ -130,12 +132,16 @@ Each significant decision is documented below with the options considered and th
 
 ---
 
-## Decision 9: Authorization in `deleteExpense` — Who Can Delete?
+## Decision 9: Authorization on Mutations — Who Can Delete/Write?
 
-**Context**: The `expenses.deleteExpense` Convex mutation does not currently check if the requesting user is authorized to delete that expense.
+**Context**: All Convex mutations (`deleteExpense`, `importBatch`, `create`, `settlements.record`, `messages.send`) initially had no server-side authorization checks. Any authenticated user with a valid Convex connection could write or delete any record.
 
-**Current State**: Anyone with a valid Convex connection can delete any expense by ID.  
-**Risk**: High — a malicious user could delete other groups' expenses.
+**Risk**: High — a malicious user could delete other groups' expenses or inject messages into chats they are not part of.
 
-**Decision**: Add a membership check before deletion (see Vulnerabilities section in this file).  
-**Planned Fix**: Before deleting, verify the requesting user is a member of the expense's group. Admin-only deletion is the preferred approach.
+**Decision**: Add group membership checks on every write mutation.  
+**Status**: ✅ **Already fixed** — every mutation now verifies the requesting user is a member of the target group before proceeding. Additional guards added:
+- `deleteExpense` requires `requestingUserId` and verifies group membership
+- `importBatch` caps at 500 rows and verifies the importer is a group member
+- `settlements.record` validates positive amount and prevents self-settlements
+- `messages.send` enforces 2000-character limit and group membership
+- `users.getAllUsers` removed entirely — it exposed all user emails to any authenticated client

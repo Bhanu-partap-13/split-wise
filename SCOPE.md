@@ -24,7 +24,27 @@ SplitSmart is a Splitwise-inspired expense splitting application built for an in
 
 ---
 
-## 2. CSV Anomaly Log
+## 2. Tech Stack
+
+| Layer | Technology | Version / Package |
+|---|---|---|
+| Framework | Next.js (App Router, TypeScript strict) | `next@16.2.9` |
+| Authentication | Clerk | `@clerk/nextjs@^7.5.2` |
+| Real-time Backend | Convex | `convex@^1.41.0` |
+| UI Components | shadcn/ui + Tailwind CSS v4 | `tailwindcss@^4` |
+| **AI / LLM** | **Google Gemini 2.5 Flash** | **`@google/generative-ai@^0.24.1`** |
+| CSV Parsing | PapaParse | `papaparse@^5.5.3` |
+| Excel Parsing | SheetJS (xlsx) | `xlsx@^0.18.5` |
+| File Upload | react-dropzone | `react-dropzone@^15.0.0` |
+| Animations | GSAP + Framer Motion | `gsap@^3.15.0` |
+| Icons | lucide-react | `lucide-react@^1.18.0` |
+| Deployment | Vercel (via GitHub) | — |
+
+> **Note on AI**: The original build spec referenced `@anthropic-ai/sdk` with `claude-sonnet-4-6`. We chose Google Gemini 2.5 Flash instead — see Decision 5 in [DECISIONS.md](./DECISIONS.md) for the full rationale.
+
+
+
+## 3. CSV Anomaly Log
 
 All anomalies are detected by `src/lib/csvValidator.ts`. The engine performs 10 distinct checks on every row of the uploaded CSV or Excel file.
 
@@ -53,7 +73,7 @@ All anomalies are detected by `src/lib/csvValidator.ts`. The engine performs 10 
 
 ---
 
-## 3. Database Schema
+## 4. Database Schema
 
 Schema defined in `convex/schema.ts`. All data is stored in Convex's real-time document database.
 
