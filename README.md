@@ -2,6 +2,16 @@
 
 SplitSmart is a Splitwise-inspired expense splitting application built with Next.js 16, Convex, and Clerk. It features a Smart CSV Import Engine for messy data, real-time expense chats, and AI-powered plain-English balance explanations.
 
+## 📄 Assignment Documentation
+
+| File | Description |
+|---|---|
+| [SCOPE.md](./SCOPE.md) | Anomaly log — every CSV data problem detected and how it is handled; full DB schema |
+| [DECISIONS.md](./DECISIONS.md) | Decision log — every significant architecture/design choice with options considered |
+| [IMPORT_REPORT.md](./IMPORT_REPORT.md) | Import report format — what the app produces when ingesting a CSV |
+| [AI_USAGE.md](./AI_USAGE.md) | AI tools used, key prompts, and 3 concrete cases where AI was wrong and corrected |
+
+
 ## 🚀 AI Integration
 
 SplitSmart leverages the power of **Google Gemini 2.5 Flash** (via the `@google/generative-ai` SDK) to provide intelligent, plain-English summaries of group balances and settlements. This feature allows users to quickly understand exactly who owes what, and why, without manually calculating complex debt graphs.

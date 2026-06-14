@@ -100,12 +100,36 @@ export const deleteGroup = mutation({
       .collect();
     await Promise.all(members.map((m) => ctx.db.delete(m._id)));
 
-    // Delete all expenses
+    // Delete all expenses + their splits + their messages (cascade)
     const expenses = await ctx.db
       .query("expenses")
       .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
       .collect();
-    await Promise.all(expenses.map((e) => ctx.db.delete(e._id)));
+
+    for (const expense of expenses) {
+      // Delete expenseSplits
+      const splits = await ctx.db
+        .query("expenseSplits")
+        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+        .collect();
+      await Promise.all(splits.map((s) => ctx.db.delete(s._id)));
+
+      // Delete messages
+      const messages = await ctx.db
+        .query("messages")
+        .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+        .collect();
+      await Promise.all(messages.map((m) => ctx.db.delete(m._id)));
+
+      await ctx.db.delete(expense._id);
+    }
+
+    // Delete all settlements
+    const settlements = await ctx.db
+      .query("settlements")
+      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
+      .collect();
+    await Promise.all(settlements.map((s) => ctx.db.delete(s._id)));
 
     // Delete the group itself
     await ctx.db.delete(args.groupId);

@@ -60,9 +60,11 @@ export function calculateBalances(
   return balances;
 }
 
-// Simplify debts — reduce N*(N-1) transactions to minimum
+// Simplify debts — reduce N*(N-1) transactions to minimum.
+// Groups by currency so multi-currency groups are handled correctly.
 export function simplifyDebts(
-  balances: Record<string, Record<string, number>>
+  balances: Record<string, Record<string, number>>,
+  defaultCurrency = "INR"
 ): BalanceEntry[] {
   const net: Record<string, number> = {};
   for (const [from, tos] of Object.entries(balances)) {
@@ -84,7 +86,12 @@ export function simplifyDebts(
 
   while (ci < cred.length && di < debt.length) {
     const settle = Math.min(cred[ci].amt, debt[di].amt);
-    result.push({ fromUser: debt[di].id, toUser: cred[ci].id, amount: Math.round(settle * 100) / 100, currency: "INR" });
+    result.push({
+      fromUser: debt[di].id,
+      toUser: cred[ci].id,
+      amount: Math.round(settle * 100) / 100,
+      currency: defaultCurrency,
+    });
     cred[ci].amt -= settle;
     debt[di].amt -= settle;
     if (cred[ci].amt < 0.01) ci++;

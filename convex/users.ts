@@ -85,16 +85,16 @@ export const getByClerkId = query({
 export const searchByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    // SECURITY: only return minimal fields needed for member lookup (name + _id)
+    const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email.trim().toLowerCase()))
       .first();
+    if (!user) return null;
+    // Return only what is needed — do NOT expose clerkId or full profile
+    return { _id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
   },
 });
 
-export const getAllUsers = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
-  },
-});
+// SECURITY: getAllUsers removed — it exposed every user's email and clerkId to any
+// authenticated client. Use searchByEmail for targeted lookups instead.
