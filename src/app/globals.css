@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0A0F1E;
+  --foreground: #FFFFFF;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-open-sans), sans-serif;
+  --font-heading: var(--font-onest), sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Custom Color Palette */
+  --color-deep-navy: #0A0F1E;
+  --color-electric-blue: #2563EB;
+  --color-soft-teal: #00C2CB;
+  --color-brand-white: #FFFFFF;
+  --color-brand-gray: #A0AEC0;
+  --color-dark-navy-surface: #131929;
+  --color-subtle-blue-gray: #1E2D45;
+  --color-cta-blue: #2563EB;
+  --color-cta-blue-hover: #3B82F6;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-open-sans), sans-serif;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-onest), sans-serif;
+}
+
+/* Animations for marquee */
+@keyframes marquee {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+.animate-marquee-vertical {
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee-vertical:hover {
+  animation-play-state: paused;
+}
+
