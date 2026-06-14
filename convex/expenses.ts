@@ -71,54 +71,25 @@ export const importBatch = mutation({
     batchId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Pre-fetch all group members and their user records for name resolution
-    const groupMembers = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
-      .collect();
-    const memberUsers = await Promise.all(
-      groupMembers.map((m) => ctx.db.get(m.userId))
-    );
-    // Build name→userId map (case-insensitive)
-    const nameToUserId = new Map<string, any>();
-    memberUsers.forEach((u) => {
-      if (u?.name) nameToUserId.set(u.name.toLowerCase(), u._id);
-    });
-
     for (const expense of args.expenses) {
       const { splits, ...expenseData } = expense;
 
-      // Resolve paidById: match paidByName to a group member, else fall back to importedBy
-      let resolvedPaidById = expenseData.paidById ?? args.importedBy;
-      if (!expenseData.paidById && expenseData.paidByName) {
-        const matched = nameToUserId.get(expenseData.paidByName.toLowerCase());
-        if (matched) resolvedPaidById = matched;
-      }
-
+      // Store paidById only if explicitly provided — never default to importedBy
       const expenseId = await ctx.db.insert("expenses", {
         ...expenseData,
         groupId: args.groupId,
         createdBy: args.importedBy,
         createdAt: Date.now(),
         importBatchId: args.batchId,
-        paidById: resolvedPaidById,
+        paidById: expenseData.paidById ?? args.importedBy, // only used for manual expenses; CSV uses paidByName
       });
 
-      // Resolve split userIds as well
       for (const split of splits) {
-        let splitUserId = split.userId;
-        if (!splitUserId && split.userName) {
-          splitUserId = nameToUserId.get(split.userName.toLowerCase());
-        }
-        await ctx.db.insert("expenseSplits", {
-          ...split,
-          userId: splitUserId,
-          expenseId,
-          isPaid: false,
-        });
+        await ctx.db.insert("expenseSplits", { ...split, expenseId, isPaid: false });
       }
     }
   },
+
 });
 
 export const getGroupExpenses = query({
@@ -135,13 +106,16 @@ export const getGroupExpenses = query({
           .query("expenseSplits")
           .withIndex("by_expense", (q) => q.eq("expenseId", e._id))
           .collect();
-        const paidBy = await ctx.db.get(e.paidById);
+        // For CSV-imported expenses, paidByName is the source of truth.
+        // Only look up the user if paidByName is not set (manual expenses).
+        const paidBy = e.paidByName ? null : (e.paidById ? await ctx.db.get(e.paidById) : null);
         return { ...e, splits, paidBy };
       })
     );
     return withSplits;
   },
 });
+
 
 export const deleteExpense = mutation({
   args: { expenseId: v.id("expenses") },
