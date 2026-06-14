@@ -1,6 +1,7 @@
 import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
 import type { Metadata } from "next";
 import { Onest, Open_Sans, Geist } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ConvexClientProvider>
           {children}
+          <Toaster position="top-right" richColors />
         </ConvexClientProvider>
       </body>
     </html>
