@@ -1,0 +1,5 @@
+spec:
+  containers:
+  - name: split-wise-app
+    image: split-wise-app:latest
+    imagePullPolicy: IfNotPresent k
